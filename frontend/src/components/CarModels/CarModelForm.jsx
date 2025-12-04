@@ -1,10 +1,12 @@
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { carModelApi } from "../../api/carModel.api";
-import { CKEditor } from "@ckeditor/ckeditor5-react";
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import { Form, Button, Row, Col } from "react-bootstrap";
 import "./CarModelForm.css";
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import { ClassicEditor, Bold, Essentials, Heading, Indent, IndentBlock, Italic, Link, List, MediaEmbed, Paragraph, Table, Undo } from "ckeditor5";
+
+import "ckeditor5/ckeditor5.css";
 
 export default function CarModelForm({ onSuccess }) {
     const { register, handleSubmit, setValue, reset } = useForm();
@@ -39,7 +41,7 @@ export default function CarModelForm({ onSuccess }) {
     };
 
     return (
-        <Form onSubmit={handleSubmit(onSubmit)} className="car-form">
+        <Form onSubmit={handleSubmit(onSubmit)} className="car-form ">
             <Row className="g-3">
                 <Col md={6}>
                     <Form.Group>
@@ -93,7 +95,32 @@ export default function CarModelForm({ onSuccess }) {
                     <Form.Group>
                         <Form.Label>Features</Form.Label>
                         <div className="ckeditor-wrapper">
-                            <CKEditor editor={ClassicEditor} onChange={(_, ed) => setValue("features", ed.getData())} />
+                            <CKEditor
+                                editor={ClassicEditor}
+                                config={{
+                                    toolbar: [
+                                        "undo",
+                                        "redo",
+                                        "|",
+                                        "heading",
+                                        "|",
+                                        "bold",
+                                        "italic",
+                                        "|",
+                                        "link",
+                                        "insertTable",
+                                        "mediaEmbed",
+                                        "|",
+                                        "bulletedList",
+                                        "numberedList",
+                                        "indent",
+                                        "outdent",
+                                    ],
+                                    plugins: [Bold, Essentials, Heading, Indent, IndentBlock, Italic, Link, List, MediaEmbed, Paragraph, Table, Undo],
+                                    initialData: "<h1>Hello from CKEditor 5!</h1>",
+                                }}
+                                onChange={(_, ed) => setValue("features", ed.getData())}
+                            />
                         </div>
                     </Form.Group>
                 </Col>

@@ -20,7 +20,7 @@ export default function CarModelsPage() {
             <CarModelList />
 
             {/* Add Car Modal */}
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static">
+            <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" size="lg">
                 <Modal.Header closeButton className="bg-dark text-light">
                     <Modal.Title>Add New Car Model</Modal.Title>
                 </Modal.Header>

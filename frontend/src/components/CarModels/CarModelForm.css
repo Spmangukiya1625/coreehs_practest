@@ -14,7 +14,7 @@
 .car-form .form-select {
     background-color: #2a2a2a;
     border: 1px solid #444;
-    color: #fff;
+    color: #fff !important;
 }
 
 .car-form .form-control:focus,
