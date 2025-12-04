@@ -1,19 +1,38 @@
 import { useState } from "react";
+import { Container, ButtonGroup, Button } from "react-bootstrap";
 import CarModelsPage from "./pages/CarModelsPage";
 import CommissionPage from "./pages/CommissionPage";
+import "./App.css";
 
 export default function App() {
     const [page, setPage] = useState("cars");
 
     return (
-        <div style={{ padding: 20 }}>
-            <button onClick={() => setPage("cars")}>Car Models</button>
-            <button onClick={() => setPage("commission")}>Commission Report</button>
+        <div className="dark-theme">
+            <Container className="mt-5 p-4 app-container rounded shadow-lg">
+                {/* Navigation Buttons */}
+                <ButtonGroup className="mb-4 d-flex justify-content-center">
+                    <Button variant={page === "cars" ? "primary" : "outline-light"} className="tab-button" onClick={() => setPage("cars")}>
+                        🚗 Car Models
+                    </Button>
 
-            <hr />
+                    <Button
+                        variant={page === "commission" ? "primary" : "outline-light"}
+                        className="tab-button"
+                        onClick={() => setPage("commission")}
+                    >
+                        💼 Commission Report
+                    </Button>
+                </ButtonGroup>
 
-            {page === "cars" && <CarModelsPage />}
-            {page === "commission" && <CommissionPage />}
+                <hr className="divider" />
+
+                {/* Pages */}
+                <div className="page-content">
+                    {page === "cars" && <CarModelsPage />}
+                    {page === "commission" && <CommissionPage />}
+                </div>
+            </Container>
         </div>
     );
 }
