@@ -11,7 +11,10 @@ export const carModelApi = {
 
     getOne: (id) => http.get(`/car-models/${id}`),
 
-    update: (id, data) => http.put(`/car-models/${id}`, data),
+    update: (id, formData) =>
+        http.put(`/car-models/${id}`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        }),
 
     remove: (id) => http.delete(`/car-models/${id}`),
 };

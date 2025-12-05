@@ -13,6 +13,13 @@ export const commissionRepository = {
                 "s.brand",
                 "s.quantity",
                 "s.price",
-            );
+            )
+            .orderBy("sm.name", "asc").orderByRaw(`
+        CASE 
+            WHEN s.class = 'A' THEN 1 
+            WHEN s.class = 'B' THEN 2 
+            WHEN s.class = 'C' THEN 3 
+        END
+    `);
     },
 };

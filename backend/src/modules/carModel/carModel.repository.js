@@ -1,3 +1,4 @@
+import { encryptToString, hashValue } from "../../libs/crypto.js";
 import { db } from "../../libs/knex.js";
 import { toDbFromDto, toDtoFromRow } from "./carModel.mapper.js";
 
@@ -30,22 +31,35 @@ export const carModelRepository = {
     async list({ search, sortBy }) {
         let query = db(TABLE);
 
-        // We cannot search encrypted text, so we search in model_name only
         if (search) {
-            query = query.whereILike("model_name", `%${search}%`);
+            const searchHash = hashValue(search);
+            console.log(searchHash);
+            query.where(function () {
+                this.whereILike("model_name", `%${search}%`).orWhere("model_code_hash", searchHash); // exact match
+            });
         }
 
-        if (sortBy === "date") {
-            // sorting by decrypted date is tricky; store created_at as proxy for "latest"
-            query = query.orderBy("created_at", "desc");
-        } else if (sortBy === "sortOrder") {
-            query = query.orderBy("sort_order", "asc");
+        // Sorting
+        if (sortBy === "sortOrder") {
+            query.orderBy("sort_order", "asc");
+        } else if (sortBy === "manufacturingDate") {
+            query.orderBy("dom_timestamp", "desc");
         } else {
-            query = query.orderBy("created_at", "desc"); // latest
+            query.orderBy("created_at", "desc");
         }
 
         const rows = await query;
-        return rows.map(toDtoFromRow);
+        const models = rows.map(toDtoFromRow);
+        const ids = models.map((m) => m.id);
+
+        if (ids.length === 0) return models;
+
+        const images = await db(IMG_TABLE).whereIn("car_model_id", ids).select("car_model_id", "url", "is_default");
+
+        return models.map((m) => ({
+            ...m,
+            images: images.filter((img) => img.car_model_id === m.id),
+        }));
     },
 
     async addImages(carModelId, urls, defaultUrl) {
@@ -64,5 +78,9 @@ export const carModelRepository = {
 
     async listImages(carModelId) {
         return db(IMG_TABLE).where({ car_model_id: carModelId });
+    },
+
+    async clearImages(carModelId) {
+        return db("car_model_images").where({ car_model_id: carModelId }).del();
     },
 };

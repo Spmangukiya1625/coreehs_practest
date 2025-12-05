@@ -34,7 +34,7 @@
 .ck.ck-editor__editable_inline {
     min-height: 120px;
     color: #fff;
-    background-color: #1e1e1e;
+    background-color: #1e1e1e !important;
 }
 
 button.btn-primary {

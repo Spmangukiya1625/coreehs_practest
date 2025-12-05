@@ -11,20 +11,19 @@ export const commissionService = {
     async generateReport() {
         const rows = await commissionRepository.getSalesWithSalesmen();
 
-        const result = [];
+        const result = {};
 
         for (const row of rows) {
             const rules = COMMISSION_RULES[row.brand];
             if (!rules) continue;
 
-            const classKey = row.class; // 'A' | 'B' | 'C'
+            const classKey = row.class;
             const qty = Number(row.quantity);
             const price = Number(row.price);
 
             const percent = rules.percent[classKey];
             const baseCommission = qty * price * (percent / 100);
 
-            // fixed if per-unit price > threshold (could be interpreted different, but documented)
             const fixedCommission = price > rules.fixed.threshold ? qty * rules.fixed.amount : 0;
 
             let extraCommission = 0;
@@ -34,10 +33,21 @@ export const commissionService = {
 
             const totalCommission = baseCommission + fixedCommission + extraCommission;
 
-            result.push({
-                salesmanId: row.salesman_id,
-                salesmanName: row.salesman_name,
-                class: classKey,
+            // GROUPING STRUCTURE
+            if (!result[row.salesman_id]) {
+                result[row.salesman_id] = {
+                    salesmanId: row.salesman_id,
+                    salesmanName: row.salesman_name,
+                    previousYearSales: row.previous_year_sales,
+                    classes: {
+                        A: [],
+                        B: [],
+                        C: [],
+                    },
+                };
+            }
+
+            result[row.salesman_id].classes[classKey].push({
                 brand: row.brand,
                 quantity: qty,
                 unitPrice: price,
@@ -48,19 +58,51 @@ export const commissionService = {
             });
         }
 
-        return result;
+        return Object.values(result);
     },
 
     async generateCsv() {
         const data = await this.generateReport();
         if (!data.length) return "";
 
-        const header = Object.keys(data[0]).join(",");
-        const lines = data.map((row) =>
-            Object.values(row)
-                .map((v) => (typeof v === "string" ? `"${v.replace(/"/g, '""')}"` : v))
-                .join(","),
-        );
-        return [header, ...lines].join("\n");
+        const header = [
+            "Salesman Name",
+            "Previous Year Sales",
+            "Class",
+            "Brand",
+            "Quantity",
+            "Unit Price",
+            "Base Commission",
+            "Fixed Commission",
+            "Extra Commission",
+            "Total Commission",
+        ].join(",");
+
+        const rows = [];
+
+        for (const salesman of data) {
+            const { salesmanName, previousYearSales, classes } = salesman;
+
+            for (const classKey of ["A", "B", "C"]) {
+                for (const entry of classes[classKey]) {
+                    rows.push(
+                        [
+                            `"${salesmanName}"`,
+                            previousYearSales,
+                            classKey,
+                            `"${entry.brand}"`,
+                            entry.quantity,
+                            entry.unitPrice,
+                            entry.baseCommission.toFixed(2),
+                            entry.fixedCommission.toFixed(2),
+                            entry.extraCommission.toFixed(2),
+                            entry.totalCommission.toFixed(2),
+                        ].join(","),
+                    );
+                }
+            }
+        }
+
+        return [header, ...rows].join("\n");
     },
 };

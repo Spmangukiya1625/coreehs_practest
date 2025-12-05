@@ -13,6 +13,10 @@ export function encryptToString(value) {
     return `${iv.toString("hex")}:${tag.toString("hex")}:${encrypted.toString("hex")}`;
 }
 
+export function hashValue(value) {
+    return crypto.createHash("sha256").update(String(value)).digest("hex");
+}
+
 export function decryptFromString(encString) {
     try {
         if (!encString || typeof encString !== "string") return null;

@@ -1,182 +1,299 @@
-# **Car Dealership Practical Test — Backend & Frontend**
+# 🚗 Car Dealership Backend — Practical Test
 
-A full-stack MERN-like project using **Node.js (ES Modules) + Express + PostgreSQL + Knex + React**
-Includes:
-
--   Car Model CRUD
--   Image Upload
--   Encrypted DB fields
--   Salesman Commission Report with CSV export
--   Clean modular architecture
+**Node.js + Express + PostgreSQL + Knex (ES Modules)**
 
 ---
 
-## 🚀 Tech Stack
+# PART 1 — Architecture Documentation
 
-### **Backend**
+## **Q1 — Backend Architecture Implementation**
 
--   Node.js (ES Modules)
--   Express.js
--   PostgreSQL
--   Knex.js (No Sequelize/Prisma)
--   AES-256-GCM encryption
--   Multer (File uploads)
--   Winston (Logging)
--   Joi (Validations)
+### **1. Modular Express API (Latest Version + ES Modules)**
 
-### **Frontend**
-
--   React (Vite)
--   Axios
--   CKEditor
--   Simple CSS/UI
-
----
-
-## 📂 Project Structure (Backend)
+The backend follows a **layered architecture**:
 
 ```
-backend/
-  src/
-    app.js
-    config/
-    libs/
-    core/
-    modules/
-      carModel/
-      commission/
-    middlewares/
-    utils/
-  knexfile.cjs
-  server.js
+Route → Controller → Service → Repository → Database
+```
+
+Directory Structure:
+
+```
+src/
+  config/
+  core/
+  libs/
+  middlewares/
+  modules/
+    carModel/
+    commission/
+  utils/
 ```
 
 ---
 
-## 🔐 Encrypted DB Fields
+### **2. Mapping Layer (DB Row → DTO → View Model)**
 
-The following fields use **AES-256-GCM encryption**:
-
--   modelCode
--   description
--   features
--   price
--   dateOfManufacturing
-
-Stored as:
+Located in:
 
 ```
-iv:tag:cipherHex
+src/modules/carModel/carModel.mapper.js
 ```
+
+Purpose:
+
+-   Convert encrypted DB fields to decrypted DTO.
+-   Normalize naming (`model_name` → `modelName`).
+-   Avoid exposing internal DB structure to frontend.
 
 ---
 
-## 🧩 Features
+### **3. Scalable Architecture (Controllers / Services / Repositories / Utils)**
 
-### **Car Model Module**
-
-✔ Create model
-✔ Update model
-✔ Delete model
-✔ List + search + sorting
-✔ Upload multiple images (max 5MB each)
-✔ Thumbnail
-✔ CKEditor for description & features
-✔ All sensitive fields encrypted in DB
-
-### **Commission Module**
-
-✔ Salesmen seeds included
-✔ Sales data seeds included
-✔ Commission calculation rules
-✔ Extra 2% for A-Class if previous sales > $500,000
-✔ API for full report
-✔ Filters (salesman, brand, class)
-✔ Sorting (totalCommission)
-✔ CSV export
+| Layer          | Responsibility                                         |
+| -------------- | ------------------------------------------------------ |
+| **Routes**     | Define HTTP endpoints                                  |
+| **Controller** | Request validation & response handling                 |
+| **Service**    | Business logic (commission, sorting, encryption, etc.) |
+| **Repository** | DB access using Knex                                   |
+| **Mapper**     | Convert DB rows <-> DTO                                |
+| **Utils**      | Common helpers (encryption, API response, etc.)        |
 
 ---
 
-## 🛠 Scripts
+### **4. Global Error Handling + Logging**
 
-### Backend
+-   Centralized error handler: `src/core/ErrorHandler.js`
+-   Custom error class: `AppError.js`
+-   Logging:
 
-```
-npm install
-npm run dev
-```
-
-### Run migrations
-
-```
-npx knex migrate:latest
-```
-
-### Run seeds
-
-```
-npx knex seed:run
-```
-
-### Frontend
-
-```
-npm install
-npm run dev
-```
+    -   Logs request errors
+    -   Logs DB connection
+    -   Stored in `logs/error.log`
+    -   Uses Winston
 
 ---
 
-## 🌐 API Endpoints
+### **5. Generic HTTP Client**
+
+File:
+
+```
+src/core/HttpClient.js
+```
+
+Features:
+
+-   Base class for external API calls
+-   Built on native `fetch`
+-   Retry + timeout + structured errors
+
+---
+
+### **6. Reusable Patterns & Generics**
+
+-   Standard API response wrapper: `ApiResponse.js`
+-   Reusable `validate()` middleware for Joi
+-   Reusable Knex repository patterns
+-   Standard CRUD service pattern used across modules
+
+---
+
+### **7. async/await Used Everywhere**
+
+-   No callbacks
+-   All DB queries, encryption, file writes, and external calls use async/await.
+
+---
+
+### **8. Database-level Encryption**
+
+Implemented using **AES-256-GCM** in:
+
+```
+src/libs/crypto.js
+```
+
+Encrypted fields:
+
+| Field               | Reason                                               |
+| ------------------- | ---------------------------------------------------- |
+| modelCode           | Sensitive & used for search (hash stored separately) |
+| description         | Rich-text, may contain internal data                 |
+| features            | Sensitive configuration                              |
+| price               | Prevent direct exposure                              |
+| dateOfManufacturing | Internal value                                       |
+
+Format stored in DB:
+
+```
+iv:tag:cipherTextHex
+```
+
+Search on `modelCode` uses deterministic `hash(modelCode)`.
+
+---
+
+# PART 2 — Architecture Questions
+
+## **1. What architecture pattern have you created?**
+
+A **Modular Layered Architecture**:
+
+```
+Presentation (Routes)
+↓
+Controller Layer
+↓
+Service Layer
+↓
+Repository Layer
+↓
+Database (Knex + PostgreSQL)
+```
+
+This ensures separation of concerns and easy scalability.
+
+---
+
+## **2. Explain the responsibilities of each module/layer.**
+
+| Layer            | Explanation                            |
+| ---------------- | -------------------------------------- |
+| **Routes**       | Exposes endpoints                      |
+| **Controllers**  | Handle HTTP, validation, mapping input |
+| **Services**     | Business logic, operations, encryption |
+| **Repositories** | Database CRUD using Knex               |
+| **Mappers**      | Transform DB rows ↔ DTO                |
+| **Core Utils**   | Error handling, logging, HTTP client   |
+| **Middlewares**  | Validation, file upload, 404           |
+
+---
+
+## **3. What security measures are implemented?**
+
+AES-256-GCM encryption
+Input validation using Joi
+Multer file-size validation (max 5MB)
+Knex parameterized queries
+Error sanitization
+Logging of suspicious requests
+Hashing `modelCode` for safe search
+Environment variables (no secrets in code)
+
+---
+
+## **4. Does your implementation prevent SQL injection? How?**
+
+Yes, because:
+
+-   All DB calls use **Knex parameterized queries**.
+-   All user inputs pass through **Joi validation**.
+-   No raw SQL is used anywhere.
+-   Repository layer isolates DB logic, preventing misuse.
+
+---
+
+## **5. What data normalization level have you used and why?**
+
+The database is structured to follow **3rd Normal Form (3NF)**:
+
+-   Separate tables: `car_models`, `car_model_images`, `salesmen`, `sales`
+-   No repeating groups
+-   No nullable redundant columns
+-   Referential integrity (foreign keys applied)
+
+3NF ensures:
+
+-   Scalability
+-   Reduced duplication
+-   Data consistency
+
+---
+
+# PART 3 — Technical Tasks
+
+## **Q1 — Car Model Management Module**
+
+### Implemented Features
+
+CRUD operations
+AES-encrypted fields
+Hash-based search
+Multiple image upload (max 5 MB each)
+CKEditor-friendly fields
+Sorting (latest, date, sortOrder)
+Thumbnail preview
+Filters on model name/code
+Class-based dynamic fields (feature, price differences)
+
+---
+
+## **Q2 — Salesman Commission Report**
+
+### Includes:
+
+Commission rules implemented exactly as per test
+Extra +2% for A-class if previous sales > $500,000
+CSV export
+Filtering & sorting
+Joining sales + salesmen data
+Nested calculation engine
+
+---
+
+# 🧪 API ENDPOINTS
 
 ### Car Models
 
-| Method | Route                        | Description          |
+| Method | Endpoint                     | Function             |
 | ------ | ---------------------------- | -------------------- |
-| GET    | `/api/car-models`            | List + search + sort |
-| POST   | `/api/car-models`            | Create               |
-| GET    | `/api/car-models/:id`        | Single model         |
-| PUT    | `/api/car-models/:id`        | Update               |
-| DELETE | `/api/car-models/:id`        | Delete               |
-| POST   | `/api/car-models/:id/images` | Upload images        |
+| GET    | `/api/car-models`            | list + search + sort |
+| POST   | `/api/car-models`            | create               |
+| GET    | `/api/car-models/:id`        | get                  |
+| PUT    | `/api/car-models/:id`        | update               |
+| DELETE | `/api/car-models/:id`        | delete               |
+| POST   | `/api/car-models/:id/images` | upload images        |
 
 ---
 
 ### Commission Report
 
-| Method | Route                            | Description           |
-| ------ | -------------------------------- | --------------------- |
-| GET    | `/api/reports/commission`        | Full report + filters |
-| GET    | `/api/reports/commission/export` | CSV export            |
+| Method | Endpoint                         | Function        |
+| ------ | -------------------------------- | --------------- |
+| GET    | `/api/reports/commission`        | generate report |
+| GET    | `/api/reports/commission/export` | CSV export      |
 
 ---
 
-## 🧪 Testing
+# 🧰 Backend Setup Instructions
 
-Use Postman or Thunder Client.
+### Install packages
 
-Example body for Car Model:
-
-```json
-{
-    "brand": "Audi",
-    "class": "A-Class",
-    "modelName": "A1 Sedan",
-    "modelCode": "AUDIA12345",
-    "description": "<p>Luxury model</p>",
-    "features": "<ul><li>ABS</li></ul>",
-    "price": 30000,
-    "dateOfManufacturing": "2025-01-01T10:00",
-    "active": true,
-    "sortOrder": 1
-}
+```
+npm install
 ```
 
----
+### Run migrations
 
-## 🧑‍💻 Author
+```
+npm run migrate
+```
 
-Created by **Sahil Mangukiya**
-Full Stack Developer
-Node.js | React | PostgreSQL | Knex.js
+### Seed initial data
 
+```
+npm run seed
+```
+
+### Start server
+
+```
+npm run dev
+```
+
+Server runs at:
+
+```
+http://localhost:5000
+```

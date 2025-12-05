@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Table, Form, Row, Col } from "react-bootstrap";
+import { Table, Form, Row, Col, Button } from "react-bootstrap";
 import { carModelApi } from "../../api/carModel.api";
+const url = import.meta.env.VITE_BACKEND_URL;
 
-export default function CarModelList() {
+export default function CarModelList({ onEdit, onDelete, reload }) {
     const [list, setList] = useState([]);
     const [search, setSearch] = useState("");
     const [sort, setSort] = useState("latest");
@@ -13,7 +14,7 @@ export default function CarModelList() {
             setList(res.data.data || []);
         };
         loadModels();
-    }, [search, sort]);
+    }, [search, sort, reload]);
 
     return (
         <div className="container mt-4">
@@ -40,6 +41,7 @@ export default function CarModelList() {
                         <th>Brand</th>
                         <th>Class</th>
                         <th>Code</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
@@ -54,7 +56,13 @@ export default function CarModelList() {
                         list.map((item) => (
                             <tr key={item.id}>
                                 <td style={{ width: 100 }}>
-                                    <img src={item.defaultImage} alt="" width={80} height={60} style={{ objectFit: "cover", borderRadius: 5 }} />
+                                    <img
+                                        src={`${url}${item.defaultImageUrl}`}
+                                        alt={item.modelName}
+                                        width={80}
+                                        height={60}
+                                        style={{ objectFit: "cover", borderRadius: 5 }}
+                                    />
                                 </td>
 
                                 <td>
@@ -63,6 +71,15 @@ export default function CarModelList() {
                                 <td>{item.brand}</td>
                                 <td>{item.class}</td>
                                 <td>{item.modelCode}</td>
+                                <td>
+                                    <Button variant="warning" size="sm" onClick={() => onEdit(item)}>
+                                        ✏️ Edit
+                                    </Button>
+                                    &nbsp;
+                                    <Button variant="danger" size="sm" onClick={() => onDelete(item.id)}>
+                                        🗑 Delete
+                                    </Button>
+                                </td>
                             </tr>
                         ))
                     )}

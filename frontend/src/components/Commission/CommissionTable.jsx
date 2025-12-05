@@ -1,41 +1,17 @@
 import { useEffect, useState } from "react";
-import { Table, Button, Spinner } from "react-bootstrap";
+import { Table, Button, Spinner, Accordion } from "react-bootstrap";
 import { commissionApi } from "../../api/commission.api";
 import "./CommissionPivotTable.css";
 
 export default function CommissionPivotTable() {
-    const [pivot, setPivot] = useState([]);
+    const [report, setReport] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const load = async () => {
             try {
                 const res = await commissionApi.getReport();
-                const raw = res.data.data;
-
-                const map = {};
-
-                raw.forEach((item) => {
-                    const key = item.salesmanName + "-" + item.class;
-
-                    if (!map[key]) {
-                        map[key] = {
-                            salesman: item.salesmanName,
-                            class: item.class,
-                            Audi: 0,
-                            Jaguar: 0,
-                            LandRover: 0,
-                            Renault: 0,
-                        };
-                    }
-
-                    if (item.brand === "Audi") map[key].Audi = item.quantity;
-                    if (item.brand === "Jaguar") map[key].Jaguar = item.quantity;
-                    if (item.brand === "Land Rover") map[key].LandRover = item.quantity;
-                    if (item.brand === "Renault") map[key].Renault = item.quantity;
-                });
-
-                setPivot(Object.values(map));
+                setReport(res.data.data);
             } catch (err) {
                 console.error("Error loading commission data", err);
             } finally {
@@ -52,7 +28,7 @@ export default function CommissionPivotTable() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "commission_pivot.csv";
+        a.download = "commission_report.csv";
         a.click();
     };
 
@@ -74,30 +50,57 @@ export default function CommissionPivotTable() {
                 </Button>
             </div>
 
-            <Table striped bordered hover responsive variant="dark" className="commission-table">
-                <thead>
-                    <tr>
-                        <th>Salesman</th>
-                        <th>Class</th>
-                        <th>Audi</th>
-                        <th>Jaguar</th>
-                        <th>Land Rover</th>
-                        <th>Renault</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {pivot.map((row, i) => (
-                        <tr key={i}>
-                            <td>{row.salesman}</td>
-                            <td>{row.class}</td>
-                            <td>{row.Audi}</td>
-                            <td>{row.Jaguar}</td>
-                            <td>{row.LandRover}</td>
-                            <td>{row.Renault}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </Table>
+            <Accordion alwaysOpen>
+                {report.map((salesman, i) => (
+                    <Accordion.Item eventKey={i.toString()} key={i}>
+                        <Accordion.Header>
+                            <b>{salesman.salesmanName}</b> — 
+                            <span className="ms-2">Previous Year Sales: ${salesman.previousYearSales.toLocaleString()}</span>
+                        </Accordion.Header>
+
+                        <Accordion.Body>
+                            {["A", "B", "C"].map((cls) => {
+                                const classData = salesman.classes[cls];
+
+                                if (!classData || classData.length === 0) return null;
+
+                                return (
+                                    <div key={cls} className="mb-4">
+                                        <h5 className="text-info">Class {cls}</h5>
+
+                                        <Table striped bordered hover responsive variant="dark">
+                                            <thead>
+                                                <tr>
+                                                    <th>Brand</th>
+                                                    <th>Quantity</th>
+                                                    <th>Unit Price</th>
+                                                    <th>Base Commission</th>
+                                                    <th>Fixed Commission</th>
+                                                    <th>Extra Commission</th>
+                                                    <th>Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {classData.map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td>{item.brand}</td>
+                                                        <td>{item.quantity}</td>
+                                                        <td>${item.unitPrice.toLocaleString()}</td>
+                                                        <td>${item.baseCommission.toFixed(2)}</td>
+                                                        <td>${item.fixedCommission.toFixed(2)}</td>
+                                                        <td>${item.extraCommission.toFixed(2)}</td>
+                                                        <td><b>${item.totalCommission.toFixed(2)}</b></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                );
+                            })}
+                        </Accordion.Body>
+                    </Accordion.Item>
+                ))}
+            </Accordion>
         </div>
     );
 }

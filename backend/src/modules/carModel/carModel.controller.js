@@ -4,8 +4,15 @@ import { ok } from "../../core/ApiResponse.js";
 export const carModelController = {
     async create(req, res, next) {
         try {
+            const files = req.files || [];
+
             const model = await carModelService.create(req.body);
-            res.json(ok(model, "Car model created"));
+
+            if (files.length > 0) {
+                await carModelService.uploadImages(model.id, files);
+            }
+
+            return res.json(ok(model, "Car model created"));
         } catch (err) {
             next(err);
         }
@@ -14,8 +21,17 @@ export const carModelController = {
     async update(req, res, next) {
         try {
             const id = Number(req.params.id);
-            const model = await carModelService.update(id, req.body);
-            res.json(ok(model, "Car model updated"));
+
+            // Update basic fields
+            const updated = await carModelService.update(id, req.body);
+
+            // If images uploaded → replace old ones
+            const files = req.files || [];
+            if (files.length > 0) {
+                await carModelService.replaceImages(id, files);
+            }
+
+            res.json(ok(updated, "Car model updated"));
         } catch (err) {
             next(err);
         }
@@ -25,7 +41,8 @@ export const carModelController = {
         try {
             const id = Number(req.params.id);
             const model = await carModelService.getById(id);
-            res.json(ok(model, "Car model details"));
+
+            return res.json(ok(model, "Car model details"));
         } catch (err) {
             next(err);
         }
@@ -37,7 +54,8 @@ export const carModelController = {
                 search: req.query.search,
                 sortBy: req.query.sortBy,
             });
-            res.json(ok(models, "Car models list"));
+
+            return res.json(ok(models, "Car models list"));
         } catch (err) {
             next(err);
         }
@@ -47,7 +65,8 @@ export const carModelController = {
         try {
             const id = Number(req.params.id);
             await carModelService.remove(id);
-            res.json(ok(null, "Car model removed"));
+
+            return res.json(ok(null, "Car model removed"));
         } catch (err) {
             next(err);
         }
@@ -57,11 +76,16 @@ export const carModelController = {
         try {
             const id = Number(req.params.id);
             const files = req.files || [];
+
             if (!files.length) {
-                return res.status(400).json({ success: false, message: "No files uploaded" });
+                return res.status(400).json({
+                    success: false,
+                    message: "No files uploaded",
+                });
             }
+
             const result = await carModelService.uploadImages(id, files);
-            res.json(ok(result, "Images uploaded"));
+            return res.json(ok(result, "Images uploaded"));
         } catch (err) {
             next(err);
         }

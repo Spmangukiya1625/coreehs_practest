@@ -34,6 +34,8 @@ export const carModelService = {
     async remove(id) {
         const exists = await carModelRepository.findById(id);
         if (!exists) throw new NotFoundError("Car model not found");
+
+        await carModelRepository.clearImages(id);
         await carModelRepository.remove(id);
     },
 
@@ -47,6 +49,19 @@ export const carModelService = {
 
         const urls = files.map((f) => `/uploads/${f.filename}`);
         const defaultUrl = urls[0];
+        await carModelRepository.addImages(id, urls, defaultUrl);
+
+        return { urls, defaultUrl };
+    },
+    async replaceImages(id, files) {
+        const model = await carModelRepository.findById(id);
+        if (!model) throw new NotFoundError("Car model not found");
+
+        const urls = files.map((f) => `/uploads/${f.filename}`);
+        const defaultUrl = urls[0];
+
+        // Delete old images & store new ones
+        await carModelRepository.clearImages(id);
         await carModelRepository.addImages(id, urls, defaultUrl);
 
         return { urls, defaultUrl };

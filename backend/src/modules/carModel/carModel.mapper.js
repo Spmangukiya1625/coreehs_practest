@@ -1,4 +1,4 @@
-import { encryptToString, decryptFromString } from "../../libs/crypto.js";
+import { encryptToString, decryptFromString, hashValue } from "../../libs/crypto.js";
 import { buildCarModelDTO } from "./carModel.dto.js";
 
 export function toDbFromDto(dto) {
@@ -7,10 +7,12 @@ export function toDbFromDto(dto) {
         class: dto.class,
         model_name: dto.modelName,
         model_code_enc: encryptToString(dto.modelCode),
+        model_code_hash: hashValue(dto.modelCode),
         description_enc: encryptToString(dto.description),
         features_enc: encryptToString(dto.features),
         price_enc: encryptToString(dto.price),
         dom_enc: encryptToString(dto.dateOfManufacturing),
+        dom_timestamp: new Date(dto.dateOfManufacturing).getTime(),
         active: dto.active ?? true,
         sort_order: dto.sortOrder ?? null,
     };
